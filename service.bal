@@ -1,19 +1,28 @@
 import ballerina/http;
 import ballerina/mime;
 
+type CovidStatus2 record {
+    string code;
+    string flag;
+    string name;
+    decimal[] coordinates;
+    int population;
+    decimal activeCases;
+};
+
 # Represents a country
 type Country record {
-    #Country code
+    # Country code
     string code;
-    #Common name of the country
+    # Common name of the country
     string name;
-    #Population of the country
+    # Population of the country
     int population;
-    #Longitude and latitude of the country
+    # Longitude and latitude of the country
     decimal[] coordinates;
-    #Picture of the national flag in PNG format
+    # Picture of the national flag in PNG format
     string flagPic;
-    #Flag in unicode
+    # Flag in unicode
     string flag;
 };
 
@@ -26,7 +35,7 @@ service / on new http:Listener(9090) {
 
     # Returns the summary of a country given the country code
     # + return - a Country or an error 
-    resource function get country/[string code](http:Request request) returns Country|error {
+    resource function get country/[string code]() returns Country|error {
 
         record {
             string cca2;
@@ -37,7 +46,6 @@ service / on new http:Listener(9090) {
                 string common;
             } name;
 
-
         }[] res = check countryEndpoint->get(string `v3.1/alpha/${code}`);
 
         if res.length() > 0 {
@@ -46,7 +54,7 @@ service / on new http:Listener(9090) {
                 name: res[0].name.common,
                 coordinates: res[0].latlng,
                 population: res[0].population,
-                flagPic: string`/country/${res[0].cca2.toLowerAscii()}/flag`,
+                flagPic: string `/country/${res[0].cca2.toLowerAscii()}/flag`,
                 flag: res[0].flag
             };
             return country;
@@ -57,7 +65,7 @@ service / on new http:Listener(9090) {
 
     # Returns the flag in PNG format.
     # + return - picture file or an error
-    resource function get country/[string code]/flag(http:Request request, http:Caller caller) returns error? {
+    resource function get country/[string code]/flag(http:Caller caller) returns error? {
         byte[]|error content = getFlag(code);
         http:Response response = new ();
 
@@ -72,7 +80,6 @@ service / on new http:Listener(9090) {
 
         check caller->respond(response);
     }
-
 }
 
 # Utility function to get a flag from 3rd party api
