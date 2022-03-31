@@ -20,11 +20,13 @@ type Country record {
 http:Client flagEndpoint = check new ("https://flagcdn.com");
 http:Client countryEndpoint = check new ("https://restcountries.com/");
 
-# A service representing a network-accessible API
+# API for providing a useful information about countries.
 # bound to port `9090`.
 service / on new http:Listener(9090) {
 
-    resource function get country/[string code](http:Request request) returns Country|error? {
+    # Returns the summary of a country given the country code
+    # + return - a Country or an error 
+    resource function get country/[string code](http:Request request) returns Country|error {
 
         record {
             string cca2;
@@ -53,6 +55,8 @@ service / on new http:Listener(9090) {
         return error("unable to find the country", countrycode = code);
     }
 
+    # Returns the flag in PNG format.
+    # + return - picture file or an error
     resource function get country/[string code]/flag(http:Request request, http:Caller caller) returns error? {
         byte[]|error content = getFlag(code);
         http:Response response = new ();
@@ -71,6 +75,9 @@ service / on new http:Listener(9090) {
 
 }
 
+# Utility function to get a flag from 3rd party api
+# + countryCode - the country code
+# + return - a `byte[]` or an error
 function getFlag(string countryCode) returns byte[]|error {
     http:Response res = check flagEndpoint->get("/80x60/" + countryCode + ".png");
     return check res.getBinaryPayload();
