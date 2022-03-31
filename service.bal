@@ -1,12 +1,19 @@
 import ballerina/http;
 import ballerina/mime;
 
+# Represents a country
 type Country record {
+    #Country code
     string code;
+    #Common name of the country
     string name;
+    #Population of the country
     int population;
+    #Longitude and latitude of the country
     decimal[] coordinates;
+    #Picture of the national flag in PNG format
     string flagPic;
+    #Flag in unicode
     string flag;
 };
 
