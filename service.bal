@@ -1,14 +1,11 @@
 import ballerina/http;
 import ballerina/mime;
+import ballerinax/mysql;
+import ballerinax/mysql.driver as _;
+import ballerina/log;
 
-type CovidStatus2 record {
-    string code;
-    string flag;
-    string name;
-    decimal[] coordinates;
-    int population;
-    decimal activeCases;
-};
+configurable string dbuser = ?;
+configurable string dbpwd = ?;
 
 # Represents a country
 type Country record {
@@ -26,8 +23,18 @@ type Country record {
     string flag;
 };
 
+# Represents a subdivion with in a country
+type SubDivision record {
+    # subdivision code
+    string code;
+    # subdivision name
+    string name;
+};
+
 http:Client flagEndpoint = check new ("https://flagcdn.com");
 http:Client countryEndpoint = check new ("https://restcountries.com/");
+
+public mysql:Client mysqlEndpoint = check new (host = "trimbledemo.mysql.database.azure.com", user = dbuser, password = dbpwd, database = "countries");
 
 # API for providing a useful information about countries.
 # bound to port `9090`.
@@ -36,6 +43,7 @@ service / on new http:Listener(9090) {
     # Returns the summary of a country given the country code
     # + return - a Country or an error 
     resource function get country/[string code]() returns Country|error {
+        log:printInfo("get country information for: " + code);
 
         record {
             string cca2;
@@ -66,6 +74,9 @@ service / on new http:Listener(9090) {
     # Returns the flag in PNG format.
     # + return - picture file or an error
     resource function get country/[string code]/flag(http:Caller caller) returns error? {
+
+        log:printInfo("get country flag for: " + code);
+
         byte[]|error content = getFlag(code);
         http:Response response = new ();
 
@@ -79,6 +90,19 @@ service / on new http:Listener(9090) {
         }
 
         check caller->respond(response);
+    }
+
+    resource function get country/[string code]/subdivisions() returns SubDivision[]|error {
+
+        log:printInfo("get country subdivisions for: " + code);
+
+        stream<SubDivision, error?> queryRowResponse = mysqlEndpoint->query(`select code, name from subdivisions where country = ${code.toUpperAscii()}`);
+        SubDivision[] subs = [];
+        check from SubDivision result in queryRowResponse
+            do {
+                subs.push(result);
+            };
+        return subs;
     }
 }
 
